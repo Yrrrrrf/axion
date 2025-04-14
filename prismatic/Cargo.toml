@@ -1,0 +1,54 @@
+[package]
+name = "prismatic"
+version = "0.0.1"
+edition = "2024"
+description = "Automatic API generator that creates a REST API mirror of a database in Rust"
+authors = ["Yrrrrrf"]
+repository = "https://github.com/Yrrrrrf/prismatic"
+license = "MIT"
+readme = "../README.md"
+keywords = ["api", "rest", "database", "axum", "sqlx"]
+categories = ["web-programming", "database", "development-tools"]
+
+# exclude = [
+#     "resources/",  # some svg, logs and other resources
+# ]
+
+# # FEATURES -----------------------------------------------------------------------------------
+# [features]
+# default = ["postgres", "axum-server"]
+# postgres = ["prismatic-db/postgres"]
+# mysql = ["prismatic-db/mysql"]
+# sqlite = ["prismatic-db/sqlite"]
+# axum-server = []
+# full = ["postgres", "mysql", "sqlite"]
+
+# DEPENDENCIES ------------------------------------------------------------------------------
+[dependencies]
+# Internal crates
+# prismatic-core = { path = "../core/prismatic-core", version = "0.0.1" }
+# prismatic-db = { path = "../core/prismatic-db", version = "0.0.1" }
+# prismatic-server = { path = "../core/prismatic-server", version = "0.0.1" }
+# prismatic-macros = { path = "../prismatic-macros", version = "0.0.1", optional = true }
+
+# External dependencies from workspace
+dev_utils = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+sqlx = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+tokio-test = { workspace = true }
