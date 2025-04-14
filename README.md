@@ -5,7 +5,7 @@
 
 <div align="center">
 
-[![crates.io](https://img.shields.io/crates/v/prismatic.svg)](https://crates.io/crates/prismatic)
+<!-- [![crates.io](https://img.shields.io/crates/v/prismatic.svg)](https://crates.io/crates/prismatic) -->
 [![GitHub: prismatic](https://img.shields.io/badge/GitHub-prismatic-181717?logo=github)](https://github.com/Yrrrrrf/prismatic)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
 <!-- [![Rust](https://img.shields.io/badge/rust-1.75%2B-blue.svg)](https://www.rust-lang.org) -->
