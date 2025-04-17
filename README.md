@@ -99,7 +99,7 @@ async fn main() -> anyhow::Result<()> {
 
 ## Plans for the Future
 
-- [ ] Main clone of [prism-py](https://pypi.org/project/prism-py/) and [prism-ts](https://www.npmjs.com/package/prism-ts) with all features
+- [ ] Main clone of [prism-py](https://pypi.org/project/prism-py/) and [prism-ts](https://jsr.io/@yrrrrrf/prism-ts) with all features
     - [ ] Support for all database types (PostgreSQL, MySQL, SQLite, etc.)
     - [ ] Support for all query types (CRUD, JOIN, etc.)
     - [ ] Support for all authentication types (JWT, OAuth, etc.)
