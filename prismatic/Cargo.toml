@@ -1,6 +1,6 @@
 [package]
 name = "prismatic"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 description = "Automatic API generator that creates a REST API mirror of a database in Rust"
 authors = ["Yrrrrrf"]
@@ -31,9 +31,12 @@ categories = ["web-programming", "database", "development-tools"]
 # prismatic-server = { path = "../core/prismatic-server", version = "0.0.1" }
 # prismatic-macros = { path = "../prismatic-macros", version = "0.0.1", optional = true }
 
-# External dependencies from workspace
+# External dependencies from workspace (Add the new ones)
 dev_utils = { workspace = true }
 axum = { workspace = true }
+hyper = { workspace = true }
+hyper-util = { workspace = true } # Inherits features from workspace definition now
+bytes = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 tokio = { workspace = true }
@@ -48,6 +51,10 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+reqwest = { workspace = true }
+http-body-util = { workspace = true }
+hyper-rustls = { workspace = true }
+# rustls = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

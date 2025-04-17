@@ -11,9 +11,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create configuration with explicit values
     let config = PrismConfig {
-        project_name: "Prism API",
-        version: "0.1.0",
-        description: Some("API builder"),
+        project_name: env!("CARGO_PKG_NAME"),
+        version: env!("CARGO_PKG_VERSION"),
+        description: Option::Some(env!("CARGO_PKG_DESCRIPTION")),
         static_assets_path: Some(std::path::PathBuf::from("assets")),
         host: "127.0.0.1", // Explicit string conversion
         port: 3000,
