@@ -1,3 +1,6 @@
+# Attributions 
 
+This file lists the attributions and credits for resources used in this project.
 
-https://www.flaticon.com/free-icon/prism_2387949?term=prism&page=1&position=5&origin=search&related_id=2387949
+# Icons
+- The [arrow icon](./img/arrow.png) has been generated using the model [`gemini-2.5-flash`](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash) on it's version `preview-05-20`

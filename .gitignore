@@ -13,5 +13,5 @@ resources/data/
 
 # some - temp
 tests/
-prismatic-macros/
-core/
+axion-macros/
+# axion-core/

@@ -1,58 +1,51 @@
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/Yrrrrrf/prismatic/main/resources/img/prism.png" alt="Prism Icon" width="128" height="128" description="A prism that can take one light source and split it into multiple colors!">
-  <div align="center">prismatic</div>
+<img src="https://raw.githubusercontent.com/Yrrrrrf/axion/main/resources/img/arrow.png" alt="Axion Icon" width="128" height="128" description="An icon representing Axion: transforming a single data source (database) into a spectrum of API endpoints.">
+<div align="center">AXION</div>
 </h1>
 
 <div align="center">
 
-<!-- [![crates.io](https://img.shields.io/crates/v/prismatic.svg)](https://crates.io/crates/prismatic) -->
-[![GitHub: prismatic](https://img.shields.io/badge/GitHub-prismatic-181717?logo=github)](https://github.com/Yrrrrrf/prismatic)
+[![crates.io](https://img.shields.io/crates/v/axion.svg)](https://crates.io/crates/axion)
+[![GitHub: Axion](https://img.shields.io/badge/GitHub-axion-181717?logo=github)](https://github.com/Yrrrrrf/axion)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
-<!-- [![Rust](https://img.shields.io/badge/rust-1.75%2B-blue.svg)](https://www.rust-lang.org) -->
 
 </div>
 
-## Overview
+High-performance Rust library for automatic API generation from database schemas.It empowers you to create a blazingly fast REST API that mirrors your database structure, effortlessly handling tables, views, functions, and procedures with Rust's renowned memory safety and zero-cost abstractions. Focused on speed and resource efficiency, it's the ideal solution for microservices and high-traffic APIs.
 
-**prismatic** is a high-performance Rust library for automatic API generation from database schemas. It creates a blazingly fast REST API that mirrors your database structure, handling tables, views, functions, and procedures with memory safety and zero-cost abstractions.
+The name axion not only hints at its foundation on [Axum](https://axum.rs/) but also resonates with the Spanish word "*acción*" (action), reflecting its core promise: to take decisive action in transforming your **database schema into a fully functional API** with minimal effort.
 
-Built with [Axum](https://github.com/tokio-rs/axum) and [SQLx](https://github.com/launchbadge/sqlx), **prismatic** eliminates boilerplate code while providing exceptional performance and safety. Focused on speed and resource efficiency, it's the ideal solution for microservices and high-traffic APIs.
 
-> **Note**: This library is part of the Prism ecosystem, which also includes [**prism-py**](https://github.com/Yrrrrrf/prism-py) (`Python`) and [**prism-ts**](https://github.com/Yrrrrrf/prism-ts) (`TypeScript`) variants.
+> Note: This library is part of a broader ecosystem aimed at simplifying database-to-client workflows, which also includes Python ([prism-py](https://github.com/Yrrrrrf/prism-py)) and TypeScript ([prism-ts](https://github.com/Yrrrrrf/prism-ts)) variants. **Axion represents the high-performance Rust engine** within this ecosystem.
 
-> **Note**: This is an early version of the library, and while it is functional, it may not be fully stable. Please report any issues you encounter.
+> Note: This is an early version of the library. While functional, it may not be fully stable. Please report any issues you encounter.
 
-## Key Features
+# Key Features
 
-- **🚀 High Performance**: Built on Tokio and Hyper for maximum throughput
-- **🔒 Memory Safety**: Rust's ownership model guarantees thread safety
-- **⚡ Async Everything**: Fully asynchronous I/O operations without blocking
-- **🔄 Automatic Route Generation**: Create CRUD endpoints for database objects
-- **🌐 Database Independence**: Support for PostgreSQL, MySQL, and SQLite
-- **🧩 Schema-Based Organization**: Routes organized by database schemas for clean API structure
-- **📊 Enhanced Filtering**: Sorting, pagination, and complex query support
-- **🔍 Metadata API**: Explore your database structure programmatically
-- **🏥 Health Monitoring**: Built-in health check endpoints
-- **📦 Zero Boilerplate**: Generate complete APIs with minimal code
-- **📉 Low Resource Usage**: Minimal memory footprint and CPU utilization
+🚀 High Performance: Built on [Tokio](https://tokio.rs/) and [Hyper](https://hyper.rs/) for maximum throughput.  
+🔒 Memory Safety: Rust's ownership model guarantees thread safety.  
+⚡ Async Everything: Fully asynchronous I/O operations without blocking.  
+🔄 Automatic Route Generation: Create CRUD endpoints for database objects.  
+🌐 Database Independence: Support for PostgreSQL, MySQL, and SQLite.  
+🧩 Schema-Based Organization: Routes organized by database schemas for clean API structure.  
+📊 Enhanced Filtering: Sorting, pagination, and complex query support.  
+🔍 Metadata API: Explore your database structure programmatically.  
+🏥 Health Monitoring: Built-in health check endpoints.  
+📦 Zero Boilerplate: **Generate complete APIs with minimal code – true "acción"!**  
+📉 Low Resource Usage: Minimal memory footprint and CPU utilization.  
 
-## Installation
-
-```bash
-# Add to your Cargo.toml
-cargo add prism
-
-# Or with specific features
-cargo add prism --features postgres
+# Installation
+Add to your Cargo.toml
+```sh
+cargo add axion
 ```
 
-## Quick Start
+# Quick Start
 
-Here's a minimal example to get you started:
+Here's a minimal example to get you started with axion:
 
 ```rust
-use prism_rs::{PrismApi, DbConfig, ModelManager};
-use std::sync::Arc;
+use axion::prelude::*;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -61,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Configure database connection
     let db_config = DbConfig::new()
-        .database_type(DatabaseType::Postgres)
+        .database_type(DatabaseType::Postgres) // Example
         .host("localhost")
         .port(5432)
         .database("yourdb")
@@ -80,10 +73,10 @@ async fn main() -> anyhow::Result<()> {
     ).await?);
 
     // Initialize API generator
-    let prism = PrismApi::new(model_manager.clone());
+    let axion_api = AxionApi::new(model_manager.clone());
     
     // Build router with all generated routes
-    let app = prism.build_router();
+    let app = axion_api.build_router();
     
     // Serve the application
     let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8000));
@@ -97,25 +90,24 @@ async fn main() -> anyhow::Result<()> {
 }
 ```
 
-## Plans for the Future
+# Plans for the Future
+- Full feature parity with prism-py and prism-ts.
+- Comprehensive support for all database types (PostgreSQL, MySQL, SQLite, etc.).
+- Support for all query types (CRUD, JOIN, etc.).
+- Robust authentication mechanisms (JWT, OAuth, etc.).
+- Flexible authorization models (RBAC, ABAC, etc.).
+- Advanced error handling strategies (HTTP, custom, etc.).
+- Versatile logging options (file, console, etc.).
+- Customizable API routes and endpoints.
+- Advanced filtering and sorting capabilities.
+- Custom pagination solutions.
+- Support for various response formats (e.g., JSON, XML, etc.).
+- Custom request validation and sanitization.
 
-- [ ] Main clone of [prism-py](https://pypi.org/project/prism-py/) and [prism-ts](https://jsr.io/@yrrrrrf/prism-ts) with all features
-    - [ ] Support for all database types (PostgreSQL, MySQL, SQLite, etc.)
-    - [ ] Support for all query types (CRUD, JOIN, etc.)
-    - [ ] Support for all authentication types (JWT, OAuth, etc.)
-    - [ ] Support for all authorization types (RBAC, ABAC, etc.)
-    - [ ] Support for all error handling types (HTTP, custom, etc.)
-    - [ ] Support for all logging types (file, console, etc.)
-    - [ ] Customizable API routes and endpoints
-        - [ ] Support for more advanced filtering and sorting options
-        - [ ] Support for custom pagination options
-        - [ ] Support for custom response formats (e.g., JSON, XML, etc.)
-        - [ ] Support for custom request validation and sanitization
+<!--
+## Generated Routes (Example - To be defined for Axion)
 
-<!-- 
-## Generated Routes
-
-prismatic automatically creates the following types of routes:
+Axion will automatically create the following types of routes:
 
 ### Table Routes
 - `POST /{schema}/{table}` - Create a record
@@ -145,30 +137,18 @@ prismatic automatically creates the following types of routes:
 
 ## Usage Examples
 
-See the [examples](./examples) directory for complete sample applications:
+See the `examples` directory for complete sample applications (once available):
+-->
 
-- **[Simple Server](./examples/simple_server.rs)**: Basic server setup with minimal configuration
-- **[Full API](./examples/full_api.rs)**: Comprehensive example with all features enabled
-- **[Authentication](./examples/authentication.rs)**: Adding JWT authentication to your API -->
+# Performance
 
-## Performance
+axion is engineered for exceptional performance and minimal resource usage:
 
-prismatic is designed for high performance and low resource usage:
+- Aims for significantly faster response times compared to equivalent dynamic language implementations.
+- Minimal memory footprint with efficient connection pooling.
+- High concurrency, capable of handling thousands of simultaneous connections.
+- Low CPU usage, even under heavy load.
 
-- **10-50x** faster response times compared to equivalent Python implementations
-- **Minimal memory footprint** with efficient connection pooling
-- **High concurrency** handling thousands of simultaneous connections
-- **Low CPU usage** even under heavy load
+# License
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-Before contributing:
-1. Run `cargo fmt` to format your code
-2. Ensure all tests pass with `cargo test`
-3. Check for issues with `cargo clippy`
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

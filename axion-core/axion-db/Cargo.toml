@@ -1,0 +1,50 @@
+# axion/axion-core/axion-db/Cargo.toml (DB crate manifest)
+
+[package]
+name = "axion-db"
+version = "0.0.1"
+edition = "2024"
+description = "Database functionality for the axion framework"
+authors = ["Yrrrrrf"]
+repository = "https://github.com/Yrrrrrf/axion"
+license = "MIT"
+keywords = ["database", "sqlx", "postgres", "mysql", "sqlite"]
+categories = ["database"]
+
+# # FEATURES -----------------------------------------------------------------------------------
+# [features]
+# default = []
+# postgres = ["sqlx/postgres"]
+# mysql = ["sqlx/mysql"]
+# sqlite = ["sqlx/sqlite"]
+
+# DEPENDENCIES ------------------------------------------------------------------------------
+[dependencies]
+# Internal crates
+
+# Database connectivity
+sqlx = { workspace = true }
+
+# Async utilities
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Serialization and data handling
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Date/time utilities
+chrono = { workspace = true }
+
+# Logging and tracing
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+pretty_assertions = { workspace = true }

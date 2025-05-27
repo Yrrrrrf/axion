@@ -1,0 +1,48 @@
+# axion-core/axion-server/Cargo.toml
+[package]
+name = "axion-server" # <-- CHANGE THIS
+version = "0.0.1"
+edition = "2024"
+description = "Server component for the axion framework" # Adjusted description
+authors = ["Yrrrrrf"]
+repository = "https://github.com/Yrrrrrf/axion"
+license = "MIT"
+keywords = ["api", "rest", "axum", "web-server", "http", "axion", "server"]
+categories = ["web-programming", "http-server"]
+
+# # FEATURES -----------------------------------------------------------------------------------
+# [features]
+# default = ["axum-support"]
+# axum-support = []
+
+[dependencies]
+axion-db = { path = "../axion-db", version = "0.0.1" }
+
+# Web framework and HTTP utilities
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# Async utilities
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Serialization and data handling
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Date/time utilities
+chrono = { workspace = true }
+
+# Logging and tracing
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+pretty_assertions = { workspace = true }
