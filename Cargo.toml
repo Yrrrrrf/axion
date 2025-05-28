@@ -3,9 +3,9 @@
 [workspace]
 members = [
     "axion",
-    "axion-core/axion-db",
-    "axion-core/axion-server",
-    "axion-macros"
+    # "axion-core/axion-db",
+    # "axion-core/axion-server",
+    # "axion-macros"
 ]
 resolver = "2"
 
