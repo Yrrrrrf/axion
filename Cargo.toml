@@ -8,6 +8,14 @@ members = [
     # "axion-macros"
 ]
 resolver = "2"
+exclude = [
+    ".github",
+    "axion-core/*",
+    "axion-macros/*",
+]
+
+# ignore some of the directories...
+
 
 # COMPILE OPTIMIZATION ... (keep existing settings) ...
 
@@ -35,7 +43,7 @@ async-trait = "0.1.88"
 futures = "0.3.31"
 
 # Database connectivity
-sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "mysql", "sqlite", "time", "uuid", "json"] }
+sqlx = { version = "0.8.6", features = ["any", "runtime-tokio-rustls", "postgres", "macros", "json", "uuid", "chrono", "time", "rust_decimal", "bigdecimal", "ipnetwork", "ipnet", "mac_address"] }
 
 # Serialization and data handling
 serde = { version = "1.0.219", features = ["derive"] }

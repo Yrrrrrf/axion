@@ -1,6 +1,6 @@
 // examples/server_simple.rs
-use prismatic::api::PrismApi;
-use prismatic::api::prism::PrismConfig;
+use axion::api::PrismApi;
+use axion::api::prism::PrismConfig;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

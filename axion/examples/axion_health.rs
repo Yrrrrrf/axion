@@ -8,12 +8,12 @@ use axum::{
     routing::{get, post},
 };
 use chrono::{DateTime, Utc};
+use dev_utils::{debug, error, info, warn};
 use serde::Serialize;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
 };
-use dev_utils::{info, debug, error, warn};
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
@@ -130,7 +130,7 @@ async fn main() {
     info!("===========================================");
     info!("🏥 Prismatic Health Example");
     info!("===========================================");
-    
+
     // Create router with health routes and add tracing middleware
     let app = Router::new()
         .nest("/health", create_health_routes())
@@ -138,7 +138,7 @@ async fn main() {
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
-                .on_response(trace::DefaultOnResponse::new().level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
         )
         .with_state(state.clone());
 
@@ -148,7 +148,7 @@ async fn main() {
     info!("  GET    /health/ping  - Simple ping endpoint");
     info!("  GET    /health/cache - Cache status");
     info!("  POST   /health/clear-cache - Clear metadata cache");
-    
+
     info!("===========================================");
     info!("Use a browser or tool like curl to test the endpoints:");
     info!("  curl http://127.0.0.1:3000/health");
@@ -159,11 +159,13 @@ async fn main() {
     info!("===========================================");
 
     // Create a listener on the specified address
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+        .await
+        .unwrap();
+
     // Log server start
     info!("Server listening on http://127.0.0.1:3000");
-    
+
     // Start the server
     axum::serve(listener, app).await.unwrap();
 }

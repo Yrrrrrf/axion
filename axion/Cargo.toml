@@ -1,6 +1,6 @@
 [package]
 name = "axion"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 description = "Automatic API generator that creates a REST API mirror of a database in Rust"
 authors = ["Yrrrrrf"]
@@ -26,7 +26,7 @@ categories = ["web-programming", "database", "development-tools"]
 # DEPENDENCIES ------------------------------------------------------------------------------
 [dependencies]
 # Internal crates
-# axion-db = { path = "../axion-core/axion-db", version = "0.0.1" }
+axion-db = { path = "../axion-core/axion-db", version = "0.0.1" }
 # axion-server = { path = "../axion-core/axion-server", version = "0.0.1" }
 # axion-macros = { path = "../axion-macros", version = "0.0.1", optional = true }
 

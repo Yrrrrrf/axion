@@ -2,7 +2,6 @@ use reqwest::Client;
 use std::time::Duration;
 use std::time::Instant;
 
-
 // todo: ON PRISMATIC
 // todo: - Add an improved ping
 // todo: - Add a timeout to the request
