@@ -5,9 +5,11 @@
 
 <div align="center">
 
-[![crates.io](https://img.shields.io/crates/v/axion.svg)](https://crates.io/crates/axion)
 [![GitHub: Axion](https://img.shields.io/badge/GitHub-axion-181717?logo=github)](https://github.com/Yrrrrrf/axion)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://choosealicense.com/licenses/mit/)
+[![crates.io](https://img.shields.io/crates/v/axion.svg)](https://crates.io/crates/axion)
+[![docs.rs](https://docs.rs/axion/badge.svg)](https://docs.rs/axion)
+[![Crates.io Downloads](https://img.shields.io/crates/d/axion)](https://crates.io/crates/axion)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 </div>
 
