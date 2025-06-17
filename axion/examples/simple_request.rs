@@ -2,10 +2,8 @@ use reqwest::Client;
 use std::time::Duration;
 use std::time::Instant;
 
-// todo: ON PRISMATIC
 // todo: - Add an improved ping
 // todo: - Add a timeout to the request
-
 async fn check_website_status(url: &str, timeout_secs: u64) {
     println!("Checking: {}", url);
 

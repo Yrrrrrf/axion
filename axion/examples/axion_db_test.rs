@@ -31,12 +31,9 @@ async fn main() -> DbResult<()> {
     let host = std::env::var("DB_HOST").unwrap_or_else(|_| "localhost".to_string());
 
     let port_str = std::env::var("DB_PORT").unwrap_or_else(|_| "5432".to_string());
-    let port = port_str.parse::<u16>().map_err(|e| {
-        DbError::Config(format!(
-            "Invalid DB_PORT '{}': {}",
-            port_str, e
-        ))
-    })?;
+    let port = port_str
+        .parse::<u16>()
+        .map_err(|e| DbError::Config(format!("Invalid DB_PORT '{}': {}", port_str, e)))?;
 
     let username = std::env::var("DB_OWNER_ADMIN").unwrap_or_else(|_| "a_hub_admin".to_string());
     let password = std::env::var("DB_OWNER_PWORD").unwrap_or_else(|_| "password".to_string());
@@ -71,7 +68,10 @@ async fn main() -> DbResult<()> {
     println!("Connection test successful!");
 
     let version = client.get_db_version().await?;
-    println!("\nDatabase version: {}", version.lines().next().unwrap_or(&version));
+    println!(
+        "\nDatabase version: {}",
+        version.lines().next().unwrap_or(&version)
+    );
 
     println!("\nListing all non-system schemas:");
     let schemas = client.list_all_schemas(false).await?;
@@ -82,8 +82,13 @@ async fn main() -> DbResult<()> {
         println!("- {}", schema);
     }
 
-    let schema_to_inspect = std::env::var("DB_SCHEMA_TO_INSPECT")
-        .unwrap_or_else(|_| schemas.first().map(String::as_str).unwrap_or("public").to_string());
+    let schema_to_inspect = std::env::var("DB_SCHEMA_TO_INSPECT").unwrap_or_else(|_| {
+        schemas
+            .first()
+            .map(String::as_str)
+            .unwrap_or("public")
+            .to_string()
+    });
     println!("\nTables in schema '{}':", schema_to_inspect);
     match client.list_tables_in_schema(&schema_to_inspect).await {
         Ok(tables) => {
@@ -96,27 +101,27 @@ async fn main() -> DbResult<()> {
                     .get_table_metadata(&schema_to_inspect, &table_name)
                     .await
                 {
-                     Ok(meta) => {
+                    Ok(meta) => {
                         println!("    Table Comment: {:?}", meta.comment);
                         println!("    Primary Keys: {:?}", meta.primary_key_columns);
                         for col in meta.columns {
-                             println!(
-                                 "      - Col: {}, SQL Type: {} (UDT: {:?}), Rust Type: {}, Nullable: {}, PK: {}, Default: {:?}, MaxLen: {:?}, NumP: {:?}, NumS: {:?}, FK: {:?}",
-                                 col.name,
-                                 col.sql_type_name,
-                                 col.udt_name,
-                                 col.rust_type_string,
-                                 col.is_nullable,
-                                 col.is_primary_key,
-                                 col.default_value,
-                                 col.character_maximum_length,
-                                 col.numeric_precision,
-                                 col.numeric_scale,
-                                 col.foreign_key_reference,
-                             );
-                         }
-                     }
-                     Err(e) => {
+                            println!(
+                                "      - Col: {}, SQL Type: {} (UDT: {:?}), Rust Type: {}, Nullable: {}, PK: {}, Default: {:?}, MaxLen: {:?}, NumP: {:?}, NumS: {:?}, FK: {:?}",
+                                col.name,
+                                col.sql_type_name,
+                                col.udt_name,
+                                col.rust_type_string,
+                                col.is_nullable,
+                                col.is_primary_key,
+                                col.default_value,
+                                col.character_maximum_length,
+                                col.numeric_precision,
+                                col.numeric_scale,
+                                col.foreign_key_reference,
+                            );
+                        }
+                    }
+                    Err(e) => {
                         eprintln!(
                             "    Error getting metadata for {}.{}: {}",
                             schema_to_inspect, table_name, e
@@ -130,17 +135,24 @@ async fn main() -> DbResult<()> {
             schema_to_inspect, e
         ),
     }
-    
+
     println!("\nFetching full database metadata for non-system schemas...");
-    let schemas_to_include_for_full_meta = None; 
-    
-    match client.get_full_database_metadata(schemas_to_include_for_full_meta).await {
+    let schemas_to_include_for_full_meta = None;
+
+    match client
+        .get_full_database_metadata(schemas_to_include_for_full_meta)
+        .await
+    {
         Ok(full_metadata) => {
-            println!("Fetched metadata for {} schemas.", full_metadata.schemas.len());
+            println!(
+                "Fetched metadata for {} schemas.",
+                full_metadata.schemas.len()
+            );
             for (schema_name, schema_data) in &full_metadata.schemas {
                 println!("Schema: {}", schema_name);
                 println!("  Tables ({}):", schema_data.tables.len());
-                for (table_name, _table_data) in &schema_data.tables { // _table_data to silence warning
+                for (table_name, _table_data) in &schema_data.tables {
+                    // _table_data to silence warning
                     println!("    - {}", table_name);
                 }
             }
