@@ -359,4 +359,18 @@ impl Introspector for PostgresIntrospector {
         }
         Ok(enums)
     }
+
+    // Add this method inside `impl PostgresIntrospector`
+    #[instrument(skip(self), name = "list_user_schemas")]
+    async fn list_user_schemas(&self) -> DbResult<Vec<String>> {
+        let query = "
+        SELECT nspname::TEXT AS schema_name
+        FROM pg_catalog.pg_namespace
+        WHERE nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+          AND nspname NOT LIKE 'pg_temp_%'
+        ORDER BY schema_name;
+    ";
+        let rows: Vec<(String,)> = sqlx::query_as(query).fetch_all(&*self.client.pool).await?;
+        Ok(rows.into_iter().map(|r| r.0).collect())
+    }
 }

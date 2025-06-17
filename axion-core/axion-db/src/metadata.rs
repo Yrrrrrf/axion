@@ -2,77 +2,171 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt; // The essential import for custom formatting
 
-// The root of our introspected database model.
-// This will be wrapped in an Arc for cheap, thread-safe sharing.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+// =================================================================================
+//  1. The Formatting Macro: A helper to create clean, aligned key-value output.
+// =================================================================================
+
+macro_rules! write_field {
+    // For simple fields: `write_field!(f, "Name", &self.name)`
+    ($f:expr, $name:literal, $value:expr) => {
+        writeln!($f, "  {:<20} : {:?}", $name, $value)
+    };
+    // For fields that are collections: `write_field!(f, "Tables", &self.tables, collection)`
+    ($f:expr, $name:literal, $collection:expr, collection) => {
+        writeln!($f, "  {:<20} : {} items", $name, $collection.len())
+    };
+}
+
+// =================================================================================
+//  2. The Metadata Structs (Now with manual Display and Debug implementations)
+// =================================================================================
+
+// --- Root Metadata Structs ---
+
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct DatabaseMetadata {
-    /// A map of schema names to their detailed metadata.
     pub schemas: HashMap<String, SchemaMetadata>,
 }
 
-/// Represents a single database schema (like `public` or `app`).
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+impl fmt::Display for DatabaseMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Database with {} schemas", self.schemas.len())
+    }
+}
+
+impl fmt::Debug for DatabaseMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "DatabaseMetadata ({} schemas):", self.schemas.len())?;
+        for (name, schema) in &self.schemas {
+            writeln!(f, "\nSchema '{}':\n{:#?}", name, schema)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct SchemaMetadata {
     pub name: String,
     pub tables: HashMap<String, TableMetadata>,
     pub views: HashMap<String, ViewMetadata>,
     pub enums: HashMap<String, EnumMetadata>,
     pub functions: HashMap<String, FunctionMetadata>,
-    // Procedures can be represented by FunctionMetadata where kind is Procedure
 }
 
-/// A normalized, database-agnostic representation of a data type.
-/// This is the core of our robust type system, abstracting away DB-specific names.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+impl fmt::Display for SchemaMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Schema '{}' [{} tables, {} views, {} enums]",
+            self.name,
+            self.tables.len(),
+            self.views.len(),
+            self.enums.len()
+        )
+    }
+}
+
+impl fmt::Debug for SchemaMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Schema '{}':", self.name)?;
+        write_field!(f, "Tables", self.tables, collection)?;
+        write_field!(f, "Views", self.views, collection)?;
+        write_field!(f, "Enums", self.enums, collection)?;
+        write_field!(f, "Functions", self.functions, collection)?;
+        Ok(())
+    }
+}
+
+// --- Type and Reference Structs ---
+
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum AxionDataType {
-    // Text types
     Text,
-    // Integer types
-    Integer(i32), // Using bit-size for precision: 16, 32, 64
-    // Floating-point types
-    Float(i32), // 32, 64
-    // Other numeric types
+    Integer(i32),
+    Float(i32),
     Numeric,
-    // Boolean
     Boolean,
-    // Date and Time
     Timestamp,
     TimestampTz,
     Date,
     Time,
-    // Binary
     Bytes,
-    // UUID
     Uuid,
-    // JSON
     Json,
     JsonB,
-    // Network
     Inet,
-    // Enum, holding the name of the Rust enum we will generate
     Enum(String),
-    // Array, holding the type of its elements
     Array(Box<AxionDataType>),
-    // A placeholder for types we don't yet explicitly handle
     Unsupported(String),
 }
 
-/// Represents a reference to another column, for foreign keys.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+// Display for AxionDataType will be its compact representation (e.g., "TEXT", "INT4", "UUID[]")
+impl fmt::Display for AxionDataType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Text => write!(f, "TEXT"),
+            Self::Integer(bits) => write!(f, "INT{}", bits),
+            Self::Float(bits) => write!(f, "FLOAT{}", bits),
+            Self::Numeric => write!(f, "NUMERIC"),
+            Self::Boolean => write!(f, "BOOL"),
+            Self::Timestamp => write!(f, "TIMESTAMP"),
+            Self::TimestampTz => write!(f, "TIMESTAMPTZ"),
+            Self::Date => write!(f, "DATE"),
+            Self::Time => write!(f, "TIME"),
+            Self::Bytes => write!(f, "BYTES"),
+            Self::Uuid => write!(f, "UUID"),
+            Self::Json => write!(f, "JSON"),
+            Self::JsonB => write!(f, "JSONB"),
+            Self::Inet => write!(f, "INET"),
+            Self::Enum(name) => write!(f, "{}", name),
+            Self::Array(inner) => write!(f, "{}[]", inner),
+            Self::Unsupported(name) => write!(f, "UNSUPPORTED({})", name),
+        }
+    }
+}
+// Debug for AxionDataType will be the verbose, struct-like representation
+impl fmt::Debug for AxionDataType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Enum(name) => f.debug_tuple("Enum").field(name).finish(),
+            Self::Array(inner) => f.debug_tuple("Array").field(inner).finish(),
+            Self::Unsupported(name) => f.debug_tuple("Unsupported").field(name).finish(),
+            _ => write!(f, "{}", self), // For simple variants, Display and Debug are the same
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct ForeignKeyReference {
     pub schema: String,
     pub table: String,
     pub column: String,
 }
+// Let's create a compact display for FKs
+impl fmt::Display for ForeignKeyReference {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}.{}", self.schema, self.table, self.column)
+    }
+}
+impl fmt::Debug for ForeignKeyReference {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // For Debug, a more structured view is nice
+        f.debug_struct("ForeignKey")
+            .field("schema", &self.schema)
+            .field("table", &self.table)
+            .field("column", &self.column)
+            .finish()
+    }
+}
 
-/// Detailed metadata for a single column in a table or view.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+// --- Core Entity Structs ---
+
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ColumnMetadata {
     pub name: String,
-    /// The original, raw data type name from the database (e.g., "character varying").
     pub sql_type_name: String,
-    /// Axion's normalized, internal data type.
     pub axion_type: AxionDataType,
     pub is_nullable: bool,
     pub is_primary_key: bool,
@@ -80,9 +174,30 @@ pub struct ColumnMetadata {
     pub comment: Option<String>,
     pub foreign_key: Option<ForeignKeyReference>,
 }
+// This provides the `column_name    VARCHAR(255)    TEXT` format
+impl fmt::Display for ColumnMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:<25} {:<20} {}",
+            self.name, self.sql_type_name, self.axion_type
+        )
+    }
+}
+impl fmt::Debug for ColumnMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Column '{}':", self.name)?;
+        write_field!(f, "SQL Type", &self.sql_type_name)?;
+        write_field!(f, "Axion Type", &self.axion_type)?;
+        write_field!(f, "Nullable", &self.is_nullable)?;
+        write_field!(f, "Primary Key", &self.is_primary_key)?;
+        write_field!(f, "Default", &self.default_value)?;
+        write_field!(f, "Foreign Key", &self.foreign_key)?;
+        write_field!(f, "Comment", &self.comment)
+    }
+}
 
-/// Metadata for a database table.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct TableMetadata {
     pub name: String,
     pub schema: String,
@@ -90,29 +205,112 @@ pub struct TableMetadata {
     pub primary_key_columns: Vec<String>,
     pub comment: Option<String>,
 }
+impl fmt::Display for TableMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}.{}", self.schema, self.name)?;
+        writeln!(
+            f,
+            "{:<25} {:<20} {}",
+            "COLUMN_NAME", "SQL_TYPE", "AXION_TYPE"
+        )?;
+        writeln!(
+            f,
+            "-------------------------------------------------------------"
+        )?;
+        for col in &self.columns {
+            writeln!(f, "{}", col)?;
+        }
+        Ok(())
+    }
+}
+impl fmt::Debug for TableMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Table '{}.{}':", self.schema, self.name)?;
+        write_field!(f, "Primary Keys", &self.primary_key_columns)?;
+        write_field!(f, "Comment", &self.comment)?;
+        writeln!(f, "  Columns ({}):", self.columns.len())?;
+        for col in &self.columns {
+            writeln!(f, "{:#?}", col)?;
+        }
+        Ok(())
+    }
+}
 
-/// Metadata for a database view.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct ViewMetadata {
     pub name: String,
     pub schema: String,
     pub columns: Vec<ColumnMetadata>,
-    /// The SQL definition of the view.
     pub definition: Option<String>,
     pub comment: Option<String>,
 }
+// Views can use the same Display format as Tables
+impl fmt::Display for ViewMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}.{}", self.schema, self.name)?;
+        writeln!(
+            f,
+            "{:<25} {:<20} {}",
+            "COLUMN_NAME", "SQL_TYPE", "AXION_TYPE"
+        )?;
+        writeln!(
+            f,
+            "-------------------------------------------------------------"
+        )?;
+        for col in &self.columns {
+            writeln!(f, "{}", col)?;
+        }
+        Ok(())
+    }
+}
+impl fmt::Debug for ViewMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "View '{}.{}':", self.schema, self.name)?;
+        write_field!(f, "Comment", &self.comment)?;
+        if let Some(def) = &self.definition {
+            writeln!(
+                f,
+                "  Definition           : {}...",
+                &def.chars().take(50).collect::<String>()
+            )?;
+        }
+        writeln!(f, "  Columns ({}):", self.columns.len())?;
+        for col in &self.columns {
+            writeln!(f, "{:#?}", col)?;
+        }
+        Ok(())
+    }
+}
 
-/// Metadata for a user-defined enum type.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct EnumMetadata {
     pub name: String,
     pub schema: String,
-    /// The possible values for this enum.
     pub values: Vec<String>,
     pub comment: Option<String>,
 }
+impl fmt::Display for EnumMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}.{} ({})",
+            self.schema,
+            self.name,
+            self.values.join(", ")
+        )
+    }
+}
+impl fmt::Debug for EnumMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Enum '{}.{}':", self.schema, self.name)?;
+        write_field!(f, "Values", &self.values)?;
+        write_field!(f, "Comment", &self.comment)
+    }
+}
 
-/// The kind of database routine. This elegantly handles functions, procedures, etc.
+// NOTE: Function-related structs are left with derived Debug for now,
+// as they are not yet implemented in the introspector.
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum RoutineKind {
     Function,
@@ -122,7 +320,6 @@ pub enum RoutineKind {
     Trigger,
 }
 
-/// The mode of a parameter to a function or procedure.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ParameterMode {
     In,
@@ -131,7 +328,6 @@ pub enum ParameterMode {
     Variadic,
 }
 
-/// Metadata for a single parameter to a function or procedure.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ParameterMetadata {
     pub name: String,
@@ -141,16 +337,13 @@ pub struct ParameterMetadata {
     pub has_default: bool,
 }
 
-/// Metadata for a database function, procedure, or trigger.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FunctionMetadata {
     pub name: String,
     pub schema: String,
     pub kind: Option<RoutineKind>,
     pub parameters: Vec<ParameterMetadata>,
-    /// The return type for scalar functions or procedures.
     pub return_type: Option<AxionDataType>,
-    /// For functions that `RETURNS TABLE(...)`, this holds the columns.
     pub return_table: Option<Vec<ColumnMetadata>>,
     pub comment: Option<String>,
 }

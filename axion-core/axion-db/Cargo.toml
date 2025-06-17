@@ -7,6 +7,7 @@ edition = "2024"
 description = "Database functionality for the axion framework"
 authors = ["Yrrrrrf"]
 repository = "https://github.com/Yrrrrrf/axion"
+# repository = "https://github.com/Yrrrrrf/axion/tree/main/axion-core/axion-db"
 license = "MIT"
 keywords = ["database", "sqlx", "postgres", "mysql", "sqlite"]
 categories = ["database"]
