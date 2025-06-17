@@ -53,6 +53,7 @@ tracing-subscriber = { workspace = true }
 reqwest = { workspace = true }
 http-body-util = { workspace = true }
 hyper-rustls = { workspace = true }
+dotenvy = { workspace = true }
 # rustls = { workspace = true }
 
 [dev-dependencies]

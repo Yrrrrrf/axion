@@ -109,11 +109,6 @@ impl DbConfig {
         self
     }
 
-    pub fn sqlite_path(mut self, path: impl Into<String>) -> Self {
-        self.sqlite_path = Some(path.into());
-        self
-    }
-
     pub fn pool_options(mut self, pool_opts: PoolOptionsConfig) -> Self {
         self.pool_options = Some(pool_opts);
         self

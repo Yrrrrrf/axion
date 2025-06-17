@@ -1,57 +1,129 @@
-// axion-db/src/metadata.rs
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap; // Added this
+// in axion-db/src/metadata.rs
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+// The root of our introspected database model.
+// This will be wrapped in an Arc for cheap, thread-safe sharing.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct DatabaseMetadata {
+    /// A map of schema names to their detailed metadata.
+    pub schemas: HashMap<String, SchemaMetadata>,
+}
+
+/// Represents a single database schema (like `public` or `app`).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SchemaMetadata {
+    pub name: String,
+    pub tables: HashMap<String, TableMetadata>,
+    pub views: HashMap<String, ViewMetadata>,
+    pub enums: HashMap<String, EnumMetadata>,
+    pub functions: HashMap<String, FunctionMetadata>,
+    // Procedures can be represented by FunctionMetadata where kind is Procedure
+}
+
+/// A normalized, database-agnostic representation of a data type.
+/// This is the core of our robust type system, abstracting away DB-specific names.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum AxionDataType {
+    // Text types
+    Text,
+    // Integer types
+    Integer(i32), // Using bit-size for precision: 16, 32, 64
+    // Floating-point types
+    Float(i32), // 32, 64
+    // Other numeric types
+    Numeric,
+    // Boolean
+    Boolean,
+    // Date and Time
+    Timestamp,
+    TimestampTz,
+    Date,
+    Time,
+    // Binary
+    Bytes,
+    // UUID
+    Uuid,
+    // JSON
+    Json,
+    JsonB,
+    // Network
+    Inet,
+    // Enum, holding the name of the Rust enum we will generate
+    Enum(String),
+    // Array, holding the type of its elements
+    Array(Box<AxionDataType>),
+    // A placeholder for types we don't yet explicitly handle
+    Unsupported(String),
+}
+
+/// Represents a reference to another column, for foreign keys.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct ForeignKeyReference {
+    pub schema: String,
+    pub table: String,
+    pub column: String,
+}
+
+/// Detailed metadata for a single column in a table or view.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ColumnMetadata {
     pub name: String,
-    pub ordinal_position: i32,
-    pub sql_type_name: String, // Raw SQL type name (e.g., "VARCHAR", "INTEGER", "character varying")
-    pub udt_name: Option<String>, // User-defined type name from `information_schema.columns.udt_name`
-    // This is often more specific for enums, domains, composites in Postgres.
-    pub internal_axion_type: String, // Axion's standardized internal type name
-    pub rust_type_string: String,    // Suggested Rust type as a string
+    /// The original, raw data type name from the database (e.g., "character varying").
+    pub sql_type_name: String,
+    /// Axion's normalized, internal data type.
+    pub axion_type: AxionDataType,
     pub is_nullable: bool,
     pub is_primary_key: bool,
-    pub is_unique: bool,
     pub default_value: Option<String>,
-    pub foreign_key_reference: Option<ForeignKeyReference>,
-    pub character_maximum_length: Option<i32>,
-    pub numeric_precision: Option<i32>,
-    pub numeric_scale: Option<i32>,
     pub comment: Option<String>,
+    pub foreign_key: Option<ForeignKeyReference>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct ForeignKeyReference {
-    pub foreign_table_schema: String,
-    pub foreign_table_name: String,
-    pub foreign_column_name: String,
-    // Could add local_column_name if needed, but often implied by ColumnMetadata
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+/// Metadata for a database table.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TableMetadata {
-    pub schema: String,
     pub name: String,
+    pub schema: String,
     pub columns: Vec<ColumnMetadata>,
     pub primary_key_columns: Vec<String>,
     pub comment: Option<String>,
-    // pub foreign_keys: Vec<ForeignKeyConstraintMeta>, // More detailed later
-    // pub unique_constraints: Vec<UniqueConstraintMeta>,
-    // pub indexes: Vec<IndexMeta>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+/// Metadata for a database view.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ViewMetadata {
-    pub schema: String,
     pub name: String,
-    pub definition: Option<String>,
+    pub schema: String,
     pub columns: Vec<ColumnMetadata>,
+    /// The SQL definition of the view.
+    pub definition: Option<String>,
     pub comment: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+/// Metadata for a user-defined enum type.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct EnumMetadata {
+    pub name: String,
+    pub schema: String,
+    /// The possible values for this enum.
+    pub values: Vec<String>,
+    pub comment: Option<String>,
+}
+
+/// The kind of database routine. This elegantly handles functions, procedures, etc.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum RoutineKind {
+    Function,
+    Procedure,
+    Aggregate,
+    Window,
+    Trigger,
+}
+
+/// The mode of a parameter to a function or procedure.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ParameterMode {
     In,
     Out,
@@ -59,81 +131,26 @@ pub enum ParameterMode {
     Variadic,
 }
 
-impl Default for ParameterMode {
-    fn default() -> Self {
-        ParameterMode::In
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+/// Metadata for a single parameter to a function or procedure.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ParameterMetadata {
     pub name: String,
     pub sql_type_name: String,
-    pub udt_name: Option<String>,
-    pub internal_axion_type: String,
-    pub rust_type_string: String,
+    pub axion_type: AxionDataType,
     pub mode: ParameterMode,
-    pub ordinal_position: i32,
     pub has_default: bool,
-    pub default_value: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum FunctionKind {
-    Scalar,
-    Table,
-    Aggregate,
-    Window,
-    Procedure, // Added to distinguish
-    Trigger,   // Added to distinguish
-}
-
-impl Default for FunctionKind {
-    fn default() -> Self {
-        FunctionKind::Scalar
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+/// Metadata for a database function, procedure, or trigger.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FunctionMetadata {
-    pub schema: String,
     pub name: String,
+    pub schema: String,
+    pub kind: Option<RoutineKind>,
     pub parameters: Vec<ParameterMetadata>,
-    pub return_sql_type_name: String,
-    pub return_udt_name: Option<String>,
-    pub return_internal_axion_type: String,
-    pub return_rust_type_string: String,
-    pub kind: FunctionKind,
-    pub definition: Option<String>,
+    /// The return type for scalar functions or procedures.
+    pub return_type: Option<AxionDataType>,
+    /// For functions that `RETURNS TABLE(...)`, this holds the columns.
+    pub return_table: Option<Vec<ColumnMetadata>>,
     pub comment: Option<String>,
-    pub is_strict: Option<bool>,    // Specific to Postgres
-    pub volatility: Option<String>, // Specific to Postgres (VOLATILE, STABLE, IMMUTABLE)
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct EnumValueMetadata {
-    pub value: String,
-    pub sort_order: Option<i32>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct EnumMetadata {
-    pub schema: String,
-    pub name: String,
-    pub values: Vec<EnumValueMetadata>,
-    pub comment: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SchemaMetadata {
-    pub name: String,
-    pub tables: HashMap<String, TableMetadata>,
-    pub views: HashMap<String, ViewMetadata>,
-    pub functions: HashMap<String, FunctionMetadata>, // Includes procedures and triggers for now
-    pub enums: HashMap<String, EnumMetadata>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct DatabaseMetadata {
-    pub schemas: HashMap<String, SchemaMetadata>,
 }

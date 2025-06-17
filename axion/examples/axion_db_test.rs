@@ -1,164 +1,146 @@
-// axion/examples/axion_db_test.rs
-use axion_db::prelude::*;
-use std::str::FromStr; // Required for DatabaseType::from_str
+// axion/examples/axion_full_schema_test.rs
+
+use axion_db::{
+    error::DbResult,
+    introspection::postgres::PostgresIntrospector, // Directly use the Postgres one for this test
+    prelude::*,
+};
 use std::sync::Arc;
+use tracing::{error, info, span, Level};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+// A simple macro to pretty-print key-value pairs with indentation.
+macro_rules! display_field {
+    ($indent:expr, $key:expr, $value:expr) => {
+        println!("{}{:<20} : {:?}", $indent, $key, $value);
+    };
+    ($indent:expr, $key:expr, $value:expr, debug) => {
+        println!("{}{:<20} : {:#?}", $indent, $key, $value);
+    };
+}
+
+// Helper function to list all user-defined schemas
+async fn list_all_user_schemas(client: &DbClient) -> DbResult<Vec<String>> {
+    let query = "
+        SELECT nspname::TEXT AS schema_name
+        FROM pg_catalog.pg_namespace
+        WHERE nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+          AND nspname NOT LIKE 'pg_temp_%'
+        ORDER BY schema_name;
+    ";
+    let rows: Vec<(String,)> = sqlx::query_as(query)
+        .fetch_all(&*client.pool)
+        .await?;
+    Ok(rows.into_iter().map(|r| r.0).collect())
+}
 
 #[tokio::main]
 async fn main() -> DbResult<()> {
-    // --- THIS IS THE FIX ---
-    // Install default SQLx drivers (Postgres, MySQL, SQLite if features are enabled)
-    // This needs to be called once, typically at the start of your application.
+    // ---- Boilerplate Setup ----
     sqlx::any::install_default_drivers();
-    // --- END FIX ---
-
-    // Load environment variables from .env file if present
-    // dotenvy::dotenv().ok();
-
-    // Setup tracing (optional, but good for debugging)
+    dotenvy::dotenv().ok();
+    
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new(
-            "info,axion_db=trace", // Adjust log levels
-        ))
+        .with(tracing_subscriber::EnvFilter::new("info,axion_db=trace"))
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // --- Construct DbConfig from individual environment variables ---
-    let db_type_str = std::env::var("DB_TYPE").unwrap_or_else(|_| "postgresql".to_string());
-    let db_type = DatabaseType::from_str(&db_type_str)
-        .map_err(|e| DbError::Config(format!("Invalid DB_TYPE: {}", e)))?;
+    info!("Starting FULL database introspection test...");
 
-    let host = std::env::var("DB_HOST").unwrap_or_else(|_| "localhost".to_string());
+    // ---- Configuration ----
+    let db_config = DbConfig::new(
+        // Forcing Postgres as this test is specific to its introspector
+        axion_db::config::DatabaseType::Postgres, 
+    )
+    .host(std::env::var("DB_HOST").unwrap_or_else(|_| "localhost".into()))
+    .port(std::env::var("DB_PORT").unwrap_or_else(|_| "5432".into()).parse().unwrap())
+    .username(std::env::var("DB_OWNER_ADMIN").unwrap_or_else(|_| "a_hub_admin".into()))
+    .password(std::env::var("DB_OWNER_PWORD").unwrap_or_else(|_| "password".into()))
+    .database_name(std::env::var("DB_NAME").unwrap_or_else(|_| "a_hub".into()));
 
-    let port_str = std::env::var("DB_PORT").unwrap_or_else(|_| "5432".to_string());
-    let port = port_str
-        .parse::<u16>()
-        .map_err(|e| DbError::Config(format!("Invalid DB_PORT '{}': {}", port_str, e)))?;
-
-    let username = std::env::var("DB_OWNER_ADMIN").unwrap_or_else(|_| "a_hub_admin".to_string());
-    let password = std::env::var("DB_OWNER_PWORD").unwrap_or_else(|_| "password".to_string());
-    let database_name = std::env::var("DB_NAME").unwrap_or_else(|_| "a_hub".to_string());
-    // --- End DbConfig construction ---
-
-    let db_config = DbConfig::new(db_type)
-        .host(host)
-        .port(port)
-        .username(username)
-        .password(password)
-        .database_name(database_name)
-        .pool_options(PoolOptionsConfig {
-            max_connections: Some(5),
-            min_connections: Some(1),
-            connect_timeout_seconds: Some(30),
-            idle_timeout_seconds: Some(300),
-            max_lifetime_seconds: Some(1800),
-            acquire_timeout_seconds: Some(30),
-            test_before_acquire: Some(true),
-        });
-
-    println!(
-        "Attempting to connect to database using config: {:?}",
-        db_config.db_type
-    );
+    // ---- Test Execution ----
     let client = Arc::new(DbClient::new(db_config).await?);
-    println!("Successfully created DbClient.");
-
-    println!("\nTesting connection...");
+    info!("DbClient created successfully.");
     client.test_connection().await?;
-    println!("Connection test successful!");
 
-    let version = client.get_db_version().await?;
-    println!(
-        "\nDatabase version: {}",
-        version.lines().next().unwrap_or(&version)
-    );
+    // 1. Discover all user schemas dynamically
+    let all_schemas = list_all_user_schemas(&client).await?;
+    info!("Discovered user schemas: {:?}", &all_schemas);
 
-    println!("\nListing all non-system schemas:");
-    let schemas = client.list_all_schemas(false).await?;
-    if schemas.is_empty() {
-        println!("No user-defined schemas found. Example might be less interesting.");
-    }
-    for schema in &schemas {
-        println!("- {}", schema);
-    }
+    // 2. Instantiate the Introspector
+    let introspector = PostgresIntrospector::new(client.clone());
 
-    let schema_to_inspect = std::env::var("DB_SCHEMA_TO_INSPECT").unwrap_or_else(|_| {
-        schemas
-            .first()
-            .map(String::as_str)
-            .unwrap_or("public")
-            .to_string()
-    });
-    println!("\nTables in schema '{}':", schema_to_inspect);
-    match client.list_tables_in_schema(&schema_to_inspect).await {
-        Ok(tables) => {
-            if tables.is_empty() {
-                println!("No tables found in schema '{}'.", schema_to_inspect);
+    // 3. Run introspection on ALL discovered schemas
+    let span = span!(Level::INFO, "introspect_full_database");
+    let _enter = span.enter();
+    
+    let full_metadata = match introspector.introspect(&all_schemas).await {
+        Ok(meta) => {
+            info!("Successfully fetched metadata for {} schemas.", meta.schemas.len());
+            meta
+        },
+        Err(e) => {
+            error!("Failed to fetch database metadata: {}", e);
+            return Err(e);
+        }
+    };
+
+    // 4. Display the comprehensive results
+    println!("\n{:=<80}", "");
+    println!("           COMPLETE DATABASE METADATA OVERVIEW");
+    println!("{:=<80}\n", "");
+
+    for schema_name in &all_schemas {
+        if let Some(schema_data) = full_metadata.schemas.get(schema_name) {
+            println!("Schema: {}", schema_name);
+            println!("{:-<80}", "");
+
+            // --- Display Enums ---
+            if schema_data.enums.is_empty() {
+                println!("  Enums: None");
+            } else {
+                println!("  Enums ({}):", schema_data.enums.len());
+                for (enum_name, enum_data) in &schema_data.enums {
+                    println!("    - Enum: {}", enum_name);
+                    display_field!("      ", "Values", &enum_data.values);
+                }
             }
-            for table_name in tables {
-                println!("  - {}", table_name);
-                match client
-                    .get_table_metadata(&schema_to_inspect, &table_name)
-                    .await
-                {
-                    Ok(meta) => {
-                        println!("    Table Comment: {:?}", meta.comment);
-                        println!("    Primary Keys: {:?}", meta.primary_key_columns);
-                        for col in meta.columns {
-                            println!(
-                                "      - Col: {}, SQL Type: {} (UDT: {:?}), Rust Type: {}, Nullable: {}, PK: {}, Default: {:?}, MaxLen: {:?}, NumP: {:?}, NumS: {:?}, FK: {:?}",
-                                col.name,
-                                col.sql_type_name,
-                                col.udt_name,
-                                col.rust_type_string,
-                                col.is_nullable,
-                                col.is_primary_key,
-                                col.default_value,
-                                col.character_maximum_length,
-                                col.numeric_precision,
-                                col.numeric_scale,
-                                col.foreign_key_reference,
-                            );
+
+            // --- Display Views ---
+            if schema_data.views.is_empty() {
+                println!("\n  Views: None");
+            } else {
+                println!("\n  Views ({}):", schema_data.views.len());
+                for (view_name, view_data) in &schema_data.views {
+                    println!("    - View: {}", view_name);
+                    // Optionally display view definition or column count
+                    display_field!("      ", "Columns", view_data.columns.len());
+                }
+            }
+            
+            // --- Display Tables ---
+            if schema_data.tables.is_empty() {
+                println!("\n  Tables: None");
+            } else {
+                println!("\n  Tables ({}):", schema_data.tables.len());
+                for (table_name, table_data) in &schema_data.tables {
+                    println!("    - Table: {}", table_name);
+                    display_field!("      ", "Primary Keys", &table_data.primary_key_columns);
+                    println!("      Columns:");
+                    for col in &table_data.columns {
+                        println!("        > Column: {}", col.name);
+                        display_field!("          ", "Axion Type", &col.axion_type, debug);
+                        display_field!("          ", "Nullable", &col.is_nullable);
+                        if col.foreign_key.is_some() {
+                           display_field!("          ", "Foreign Key", &col.foreign_key);
                         }
                     }
-                    Err(e) => {
-                        eprintln!(
-                            "    Error getting metadata for {}.{}: {}",
-                            schema_to_inspect, table_name, e
-                        )
-                    }
                 }
             }
+            println!("\n");
         }
-        Err(e) => eprintln!(
-            "Error listing tables for schema {}: {}",
-            schema_to_inspect, e
-        ),
     }
-
-    println!("\nFetching full database metadata for non-system schemas...");
-    let schemas_to_include_for_full_meta = None;
-
-    match client
-        .get_full_database_metadata(schemas_to_include_for_full_meta)
-        .await
-    {
-        Ok(full_metadata) => {
-            println!(
-                "Fetched metadata for {} schemas.",
-                full_metadata.schemas.len()
-            );
-            for (schema_name, schema_data) in &full_metadata.schemas {
-                println!("Schema: {}", schema_name);
-                println!("  Tables ({}):", schema_data.tables.len());
-                for (table_name, _table_data) in &schema_data.tables {
-                    // _table_data to silence warning
-                    println!("    - {}", table_name);
-                }
-            }
-        }
-        Err(e) => eprintln!("Error fetching full database metadata: {}", e),
-    }
-
+    
+    info!("Full introspection test completed successfully.");
     Ok(())
 }
