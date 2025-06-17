@@ -1,8 +1,10 @@
 // in axion-db/src/metadata.rs
 
+use owo_colors::{OwoColorize, Style};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt; // The essential import for custom formatting
+
 
 // =================================================================================
 //  1. The Formatting Macro: A helper to create clean, aligned key-value output.
@@ -175,13 +177,52 @@ pub struct ColumnMetadata {
     pub foreign_key: Option<ForeignKeyReference>,
 }
 // This provides the `column_name    VARCHAR(255)    TEXT` format
+
+// This provides the `column_name    VARCHAR(255)    TEXT` format
 impl fmt::Display for ColumnMetadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:<25} {:<20} {}",
-            self.name, self.sql_type_name, self.axion_type
-        )
+        // Define styles for different parts
+        let pk_style = Style::new().green().bold();
+        let fk_style = Style::new().cyan();
+        let enum_style = Style::new().yellow();
+        let type_style = Style::new().magenta();
+        let nullable_style = Style::new().red().bold();
+
+        // 1. Column Name and Nullable Marker
+        // ======================= THE CORRECTED FIX =======================
+        // A plain &str already implements Display. We just need to Box it.
+        let nullable_marker: Box<dyn fmt::Display> = if self.is_nullable {
+            Box::new(" ") // <-- Simply box the plain string slice.
+        } else {
+            Box::new("*".style(nullable_style))
+        };
+        // ===============================================================
+        write!(f, "  {} {:<25}", nullable_marker, self.name.bold())?;
+
+        // 2. SQL Type
+        write!(f, "{:<20}", self.sql_type_name.dimmed())?;
+
+        // 3. Axion Type (with special coloring for enums)
+        let binding = self.axion_type.to_string();
+        let axion_type_display: Box<dyn fmt::Display> = match &self.axion_type {
+            AxionDataType::Enum(name) => Box::new(name.style(enum_style)),
+            _ => Box::new(binding.style(type_style)),
+        };
+
+
+        write!(f, "{:<20}", axion_type_display)?;
+
+        // 4. Constraints (PK, FK)
+        let mut constraints = Vec::new();
+        if self.is_primary_key {
+            constraints.push(format!("{}", "PK".style(pk_style)));
+        }
+        if let Some(fk) = &self.foreign_key {
+            constraints.push(format!("{} -> {}", "FK".style(fk_style), fk));
+        }
+        write!(f, "{}", constraints.join(" "))?;
+
+        Ok(())
     }
 }
 impl fmt::Debug for ColumnMetadata {
@@ -207,16 +248,16 @@ pub struct TableMetadata {
 }
 impl fmt::Display for TableMetadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}.{}", self.schema, self.name)?;
+        // Use bright_blue for the table name header
         writeln!(
             f,
-            "{:<25} {:<20} {}",
-            "COLUMN_NAME", "SQL_TYPE", "AXION_TYPE"
+            "{}",
+            format!("{}.{}", self.schema, self.name)
+                .bright_blue()
+                .bold()
         )?;
-        writeln!(
-            f,
-            "-------------------------------------------------------------"
-        )?;
+
+        // Print columns
         for col in &self.columns {
             writeln!(f, "{}", col)?;
         }
@@ -247,16 +288,15 @@ pub struct ViewMetadata {
 // Views can use the same Display format as Tables
 impl fmt::Display for ViewMetadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}.{}", self.schema, self.name)?;
+        // Use bright_green for the view name header
         writeln!(
             f,
-            "{:<25} {:<20} {}",
-            "COLUMN_NAME", "SQL_TYPE", "AXION_TYPE"
+            "{}",
+            format!("{}.{}", self.schema, self.name)
+                .bright_green()
+                .bold()
         )?;
-        writeln!(
-            f,
-            "-------------------------------------------------------------"
-        )?;
+
         for col in &self.columns {
             writeln!(f, "{}", col)?;
         }

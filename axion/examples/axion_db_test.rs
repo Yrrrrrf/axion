@@ -1,7 +1,7 @@
 // axion/examples/axion_db_test.rs
 
 use axion_db::prelude::*;
-use tracing::{error, info};
+use tracing::error;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -9,7 +9,7 @@ async fn main() -> DbResult<()> {
     // ---- Boilerplate Setup ----
     sqlx::any::install_default_drivers();
     dotenvy::dotenv().ok();
-    
+
     // Using the .pretty() layer for beautiful logs!
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new("info,axion_db=trace"))
@@ -19,7 +19,12 @@ async fn main() -> DbResult<()> {
     // ---- Configuration ----
     let db_config = DbConfig::new(DatabaseType::Postgres)
         .host(std::env::var("DB_HOST").unwrap_or_else(|_| "localhost".into()))
-        .port(std::env::var("DB_PORT").unwrap_or_else(|_| "5432".into()).parse().unwrap())
+        .port(
+            std::env::var("DB_PORT")
+                .unwrap_or_else(|_| "5432".into())
+                .parse()
+                .unwrap(),
+        )
         .username(std::env::var("DB_OWNER_ADMIN").unwrap_or_else(|_| "a_hub_admin".into()))
         .password(std::env::var("DB_OWNER_PWORD").unwrap_or_else(|_| "password".into()))
         .database_name(std::env::var("DB_NAME").unwrap_or_else(|_| "a_hub".into()));
@@ -52,18 +57,17 @@ async fn main() -> DbResult<()> {
         "library",
     ];
 
- 
     // Display a summary of everything found.
     model_manager.display_summary();
-    
+
     // Display a detailed breakdown of tables from specific schemas.
     model_manager.display_tables(&schemas);
 
     // // Display a detailed breakdown of all discovered views.
-    // model_manager.display_views(&[]); // Empty slice means "all schemas"
+    model_manager.display_views(&[]); // Empty slice means "all schemas"
 
-    // // Display a summary of all discovered enums.
-    // model_manager.display_enums(&[]);
+    // Display a summary of all discovered enums.
+    model_manager.display_enums(&[]);
 
     Ok(())
 }

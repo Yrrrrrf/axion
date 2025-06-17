@@ -25,6 +25,7 @@ categories = ["database"]
 
 # Database connectivity
 sqlx = { workspace = true }
+owo-colors = { version = "4.2.1" }
 
 # Async utilities
 tokio = { workspace = true }
