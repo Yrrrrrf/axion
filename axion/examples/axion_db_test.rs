@@ -64,10 +64,10 @@ async fn main() -> DbResult<()> {
     model_manager.display_tables(&schemas);
 
     // // Display a detailed breakdown of all discovered views.
-    model_manager.display_views(&[]); // Empty slice means "all schemas"
+    // model_manager.display_views(&[]); // Empty slice means "all schemas"
 
     // Display a summary of all discovered enums.
-    model_manager.display_enums(&[]);
+    // model_manager.display_enums(&[]);
 
     Ok(())
 }

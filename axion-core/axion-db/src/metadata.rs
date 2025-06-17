@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt; // The essential import for custom formatting
 
-
 // =================================================================================
 //  1. The Formatting Macro: A helper to create clean, aligned key-value output.
 // =================================================================================
@@ -42,7 +41,7 @@ impl fmt::Debug for DatabaseMetadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "DatabaseMetadata ({} schemas):", self.schemas.len())?;
         for (name, schema) in &self.schemas {
-            writeln!(f, "\nSchema '{}':\n{:#?}", name, schema)?;
+            writeln!(f, "{:#?}", schema)?;
         }
         Ok(())
     }
@@ -208,7 +207,6 @@ impl fmt::Display for ColumnMetadata {
             AxionDataType::Enum(name) => Box::new(name.style(enum_style)),
             _ => Box::new(binding.style(type_style)),
         };
-
 
         write!(f, "{:<20}", axion_type_display)?;
 
