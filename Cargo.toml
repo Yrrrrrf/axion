@@ -1,7 +1,7 @@
 # axion/Cargo.toml (Main workspace manifest)
 
 [workspace]
-package.version = "0.0.3"
+package.version = "0.0.4"
 members = [
     "axion",
     # "axion-core/axion-db",

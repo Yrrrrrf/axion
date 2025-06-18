@@ -26,7 +26,7 @@ categories = ["web-programming", "database", "development-tools"]
 # DEPENDENCIES ------------------------------------------------------------------------------
 [dependencies]
 # Internal crates
-axion-db = { path = "../axion-core/axion-db", version = "0.0.3" }
+axion-db = { path = "../axion-core/axion-db", version = "0.0.4" }
 # axion-server = { path = "../axion-core/axion-server", version = "0.0.1" }
 # axion-macros = { path = "../axion-macros", version = "0.0.1", optional = true }
 

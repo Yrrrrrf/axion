@@ -1,4 +1,6 @@
+#![allow(unused)]
 // axion/examples/axion_db_test.rs
+
 
 use axion_db::prelude::*;
 use tracing::error;
@@ -58,16 +60,16 @@ async fn main() -> DbResult<()> {
     ];
 
     // Display a summary of everything found.
-    model_manager.display_summary();
+    // model_manager.display_summary();
 
     // Display a detailed breakdown of tables from specific schemas.
-    model_manager.display_tables(&schemas);
+    // model_manager.display_tables(&schemas);
 
     // // Display a detailed breakdown of all discovered views.
-    // model_manager.display_views(&[]); // Empty slice means "all schemas"
+    model_manager.display_views(&[]); // Empty slice means "all schemas"
 
     // Display a summary of all discovered enums.
-    // model_manager.display_enums(&[]);
+    model_manager.display_enums(&[]);
 
     Ok(())
 }

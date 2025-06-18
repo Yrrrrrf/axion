@@ -2,7 +2,7 @@
 
 [package]
 name = "axion-db"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 description = "Database functionality for the axion framework"
 authors = ["Yrrrrrf"]
@@ -25,7 +25,10 @@ categories = ["database"]
 
 # Database connectivity
 sqlx = { workspace = true }
+
+# terminal
 owo-colors = { version = "4.2.1" }
+comfy-table = { version = "7.1.4" }
 
 # Async utilities
 tokio = { workspace = true }
